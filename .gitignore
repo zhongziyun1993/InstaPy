@@ -116,3 +116,12 @@ Pipfile
 
 # Instances
 z_*
+/instapy/chromedriver
+/instapy/follower_count.py
+/instapy/get_follower_count.py
+/instapy/get_insta_comments.py
+/instapy/username_block.csv
+/instapy/username_count.csv
+/get_follower_test1.py
+/name.txt
+/socialbladeusernameCSV.csv

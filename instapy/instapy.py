@@ -11,11 +11,16 @@ import logging.handlers
 from contextlib import contextmanager
 from copy import deepcopy
 
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+
+from .Socialblade import Socialblade
+
 try:
     from pyvirtualdisplay import Display
 except ModuleNotFoundError:
     pass
-
+import urllib
 # import InstaPy modules
 from . import __version__
 from .clarifai_util import check_image
@@ -41,7 +46,7 @@ from .print_log_writer import log_following_num
 
 from .time_util import sleep
 from .time_util import set_sleep_percentage
-from .util import get_active_users
+from .util import get_active_users, new_tab
 from .util import validate_username
 from .util import web_address_navigator
 from .util import interruption_handler
@@ -90,6 +95,8 @@ from .xpath import read_xpath
 from selenium.common.exceptions import NoSuchElementException
 from .exceptions import InstaPyError
 
+# ziyun import
+from selenium.webdriver.support import expected_conditions as EC
 
 class InstaPy:
     """Class to be instantiated to use the script"""
@@ -4315,6 +4322,68 @@ class InstaPy:
             self.logfolder,
         )
         return grabbed_followers
+
+    # ziyun method
+    def grap_suggestion(self, root_username):
+        browser = self.browser
+        user_link = "https://www.instagram.com/{}/".format(root_username)
+        web_address_navigator(browser, user_link)
+        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        suggestion_button = browser.find_element_by_xpath("/html/body/div[1]/section/main/div/header/section/div[1]/div[2]/span/span[2]/button")
+        suggestion_button.click()
+        see_all_button = browser.find_element_by_xpath("/html/body/span/section/main/div/div[2]/div[1]/a")
+        see_all_button.click()
+        browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        name_list = []
+        try:
+            for i in range(1, 1000):
+                x_path = "/html/body/span/div/div/div/div[" + str(i) + "]/div[2]/div[1]/div/a"
+                name = browser.find_element_by_xpath(x_path).text
+                name_list.append(name)
+        except NoSuchElementException:
+            with open("suggested_" + root_username + '.txt', 'w') as f:
+                for item in name_list:
+                    f.write("%s\n" % item)
+            print("end")
+
+
+        socialBladeObjectList = []
+        for name in name_list:
+            socialBladeObjectList.append(self.social_blade(name, root_username))
+
+        return socialBladeObjectList
+
+
+
+    def social_blade_main(self):
+        browser = self.browser
+        self.get_social_blade()
+
+
+    def get_social_blade(self):
+        browser = self.browser
+        # root_username = "no"
+        filepath = '/Users/ziyunzhong/PycharmProjects/InstaPy/instapy/socialbladeusername.txt'
+        with open(filepath) as fp:
+            username = fp.readline().strip()
+            cnt = 1
+            while username:
+                user_link = "https://socialblade.com/instagram/user/" + username
+                web_address_navigator(browser, user_link)
+                browser.maximize_window()
+                monthlyAvgIncrease = browser.find_element_by_xpath(
+                "/html/body/div[12]/div[1]/div[13]/div[2]/span").text
+                engagementRate = browser.find_element_by_xpath(
+                "/html/body/div[11]/div[2]/div/div[3]/div[5]/span[3]").text
+                # socialBladeObject = Socialblade(monthlyAvgIncrease, engagementRate, username, root_username)
+                with open("socialbladeusernameCSV.csv", "a+") as socialBladeFile:
+                    socialBladeFile.write(username + "," + monthlyAvgIncrease + ","+ engagementRate + "\n")
+                username = fp.readline()
+                cnt += 1
+
+
+
+
 
     def grab_following(
         self,
